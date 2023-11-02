@@ -1,9 +1,13 @@
 {
-  "name": "@notation/aws",
+  "name": "@notation/aws.resources",
   "version": "0.0.1",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts src/client.ts --format cjs,esm --dts --clean",
+    "dev": "npm run build -- --watch"
+  },
   "exports": {
     "./*": {
       "require": "./dist/*.js",
@@ -11,12 +15,8 @@
       "types": "./dist/*.d.ts"
     }
   },
-  "scripts": {
-    "build": "tsup",
-    "dev": "npm run build -- --watch"
-  },
   "dependencies": {
-    "@notation/aws.resources": "workspace:*",
+    "@aws-sdk/client-api-gateway": "^3.441.0",
     "@notation/core": "workspace:*",
     "@types/aws-lambda": "^8.10.125"
   }

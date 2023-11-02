@@ -1,39 +1,20 @@
-import { AwsResourceGroup } from "./core";
+import { AwsResourceGroup } from "@notation/aws.resources/client";
 import { ApiGatewayHandler, fn } from "./lambda";
+export * from "./api-gateway.utils";
 
-export type ApiConfig = {
-  name: string;
-};
+export const api = (config: { name: string }) => {
+  const apiGroup = new AwsResourceGroup("api", config);
+  const apiGateway = apiGroup.addResource("api-gateway", { name: config.name });
 
-export const api = (config: ApiConfig) => {
-  const apiGroup = new AwsResourceGroup({ type: "api", config: config });
-
-  const apiGateway = apiGroup.createResource({
-    type: "api-gateway",
-  });
-
-  apiGroup.createResource({
-    type: "api-gateway/stage",
+  apiGroup.addResource("api-gateway/stage", {
+    name: "dev",
+    deploymentId: "123",
     dependencies: {
       routerId: apiGateway.id,
     },
   });
 
   return apiGroup;
-};
-
-export const router = (apiGroup: ReturnType<typeof api>) => {
-  const createRouteCallback =
-    (method: string) => (path: string, handler: ApiGatewayHandler) => {
-      return route(apiGroup, method, path, handler);
-    };
-  return {
-    get: createRouteCallback("GET"),
-    post: createRouteCallback("POST"),
-    put: createRouteCallback("PUT"),
-    patch: createRouteCallback("PATCH"),
-    delete: createRouteCallback("DELETE"),
-  };
 };
 
 export const route = (
@@ -47,28 +28,18 @@ export const route = (
   // at compile time becomes infra module
   const fnGroup = handler as any as ReturnType<typeof fn>;
 
-  const routeGroup = new AwsResourceGroup({
-    type: "route",
-    dependencies: {
-      router: apiGroup.id,
-      fn: fnGroup.id,
-    },
-    config: {
-      service: "aws/api-gateway",
-      path,
-      method,
-    },
+  const routeGroup = new AwsResourceGroup("api/route", {
+    dependencies: { router: apiGroup.id, fn: fnGroup.id },
   });
 
   let integration;
 
   const lambda = fnGroup.findResourceByType("lambda")!;
   const permission = fnGroup.findResourceByType("lambda/permission");
-  integration = fnGroup.findResourceByType("lambda/integration");
+  integration = fnGroup.findResourceByType("api-gateway/integration");
 
   if (!integration) {
-    integration = fnGroup.createResource({
-      type: "lambda/integration",
+    integration = fnGroup.addResource("api-gateway/integration", {
       dependencies: {
         apiGatewayId: apiGateway.id,
         lambdaId: lambda.id,
@@ -77,8 +48,7 @@ export const route = (
   }
 
   if (!permission) {
-    fnGroup.createResource({
-      type: "lambda/permission",
+    fnGroup.addResource("lambda/permission", {
       dependencies: {
         apiGatewayId: apiGateway.id,
         lambdaId: lambda.id,
@@ -86,8 +56,9 @@ export const route = (
     });
   }
 
-  routeGroup.createResource({
-    type: "api-gateway/route",
+  routeGroup.addResource("api-gateway/route", {
+    method,
+    path,
     dependencies: {
       apiGatewayId: apiGateway.id,
       integrationId: integration.id,
@@ -96,8 +67,3 @@ export const route = (
 
   return routeGroup;
 };
-
-export const json = (result: any) => ({
-  body: JSON.stringify(result),
-  statusCode: 200,
-});

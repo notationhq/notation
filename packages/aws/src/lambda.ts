@@ -1,4 +1,4 @@
-import { AwsResourceGroup } from "./core";
+import { AwsResourceGroup } from "@notation/aws.resources/client";
 import type {
   Context,
   APIGatewayProxyEvent,
@@ -21,21 +21,17 @@ export const handle = {
 };
 
 export const fn = (config: { handler: string }) => {
-  const functionGroup = new AwsResourceGroup({ type: "function", config });
+  const functionGroup = new AwsResourceGroup("aws/function", { config });
 
-  const role = functionGroup.createResource({
-    type: "iam/role",
-  });
+  const role = functionGroup.addResource("iam/role", {});
 
-  const policyAttachment = functionGroup.createResource({
-    type: "iam/policy-attachment",
+  const policyAttachment = functionGroup.addResource("iam/policy", {
     dependencies: {
       roleId: role.id,
     },
   });
 
-  functionGroup.createResource({
-    type: "lambda",
+  functionGroup.addResource("lambda", {
     dependencies: {
       policyId: policyAttachment.id,
     },

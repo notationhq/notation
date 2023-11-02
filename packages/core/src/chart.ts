@@ -3,8 +3,8 @@ import { fromUint8Array } from "js-base64";
 import { ResourceGroup, Resource } from "./resource-group";
 
 export const createMermaidFlowChart = (
-  resourceGroups: ResourceGroup<{}>[],
-  resources: Resource<{}>[],
+  resourceGroups: ResourceGroup<any>[],
+  resources: Resource[],
 ): string => {
   let mermaidString = "flowchart TD\n";
   let connectionsString = "";

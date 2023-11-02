@@ -1,75 +1,61 @@
-let resourceGroups: ResourceGroup<{}>[] = [];
-let resources: Resource[] = [];
+import {
+  resources,
+  resourceGroups,
+  getResourceCount,
+  getResourceGroupCount,
+} from "./state";
 
-let resourceGroupCounter = 0;
-let resourceCounter = 0;
-
-export type Resource<Config = {}> = {
+export type Resource = {
+  type: string;
   id: number;
   groupId: number;
-  type: string;
   dependencies: Record<string, number>;
-  config: Config;
 };
 
-export type ResourceOptions<Config extends {}> = {
-  type: string;
+export type ResourceOptions<T> = T & {
   dependencies?: Record<string, number>;
-  config?: Config;
 };
 
-export type ResourceGroupOptions<Config extends {}> = {
-  type: string;
+export type ResourceGroupOptions = {
   dependencies?: Record<string, number>;
-  config?: Config;
+  [key: string]: any;
 };
 
-export class ResourceGroup<Config extends {}> {
+export class ResourceGroup<ResourceConfigMap extends Record<string, any>> {
+  type: string;
   id: number;
-  type: string;
-  platform: string;
   dependencies: Record<string, number>;
-  config: Config;
+  config: Record<string, any>;
   resources: Resource[];
 
-  constructor(opts: ResourceGroupOptions<Config>) {
-    const { type, dependencies, config } = opts;
-    this.id = resourceGroupCounter++;
+  constructor(type: string, opts: ResourceGroupOptions) {
+    const { dependencies, ...config } = opts;
     this.type = type;
-    this.platform = "core";
+    this.id = getResourceGroupCount();
     this.dependencies = dependencies || {};
-    this.config = config || ({} as Config);
+    this.config = config || {};
     this.resources = [];
     resourceGroups.push(this);
     return this;
   }
 
-  createResource = <ResourceConfig extends {}>(
-    opts: ResourceOptions<ResourceConfig>,
+  addResource = <T extends keyof ResourceConfigMap>(
+    type: T,
+    opts: ResourceOptions<ResourceConfigMap[T]>,
   ) => {
-    const resource: Resource<ResourceConfig> = {
-      id: resourceCounter++,
+    const resource: Resource = {
+      id: getResourceCount(),
       groupId: this.id,
-      type: opts.type,
+      type: type as string,
       dependencies: opts.dependencies || {},
-      config: opts.config || ({} as ResourceConfig),
+      ...opts,
     };
     resources.push(resource);
     this.resources.push(resource);
     return resource;
   };
 
-  findResourceByType = (type: string) => {
+  findResourceByType = (type: keyof ResourceConfigMap) => {
     return this.resources.find((r) => r.type === type);
   };
 }
-
-export const getResourceGroups = () => resourceGroups;
-export const getResources = () => resources;
-
-export const reset = () => {
-  resources = [];
-  resourceGroups = [];
-  resourceCounter = 0;
-  resourceGroupCounter = 0;
-};

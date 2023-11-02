@@ -1,6 +1,9 @@
 {
   "extends": "tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@notation/core": ["../core/src"]
+    }
   }
 }

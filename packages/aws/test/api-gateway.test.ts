@@ -47,8 +47,12 @@ test("router provides methods for each HTTP verb", () => {
   const handler = fn({ handler: "handler.fn.js" });
 
   for (const method of ["GET", "POST", "PUT", "DELETE", "PATCH"]) {
-    const route = (apiRouter as any)[method.toLowerCase()]("/hello", handler);
-    expect(route.config.method).toEqual(method);
-    expect(route.config.path).toEqual("/hello");
+    const routeGroup = (apiRouter as any)[method.toLowerCase()](
+      "/hello",
+      handler,
+    );
+    const route = routeGroup.findResourceByType("api-gateway/route");
+    expect(route.method).toEqual(method);
+    expect(route.path).toEqual("/hello");
   }
 });
