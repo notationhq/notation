@@ -1,9 +1,10 @@
 import pako from "pako";
 import { fromUint8Array } from "js-base64";
-import { ResourceGroup, Resource } from "./resource-group";
+import { ResourceGroup } from "./resource-group";
+import { Resource } from "./resource";
 
 export const createMermaidFlowChart = (
-  resourceGroups: ResourceGroup<any>[],
+  resourceGroups: ResourceGroup[],
   resources: Resource[],
 ): string => {
   let mermaidString = "flowchart TD\n";
@@ -16,14 +17,14 @@ export const createMermaidFlowChart = (
     });
     mermaidString += `  end\n`;
 
-    group.resources.forEach((resource) => {
-      Object.values(resource.dependencies).forEach((depId) => {
-        const depResource = resources.find((r) => r.id === depId);
-        if (depResource) {
-          connectionsString += `  ${resource.type}_${resource.id} --> ${depResource.type}_${depId}\n`;
-        }
-      });
-    });
+    // group.resources.forEach((resource) => {
+    //   Object.values(resource.dependencies).forEach((depId) => {
+    //     const depResource = resources.find((r) => r.id === depId);
+    //     if (depResource) {
+    //       connectionsString += `  ${resource.type}_${resource.id} --> ${depResource.type}_${depId}\n`;
+    //     }
+    //   });
+    // });
   });
 
   return `${mermaidString}\n${connectionsString}`;

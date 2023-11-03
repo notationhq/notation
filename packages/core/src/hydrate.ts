@@ -1,13 +1,13 @@
-import { DeployableResource } from "./resource";
-import { Resource } from "./resource-group";
+import { DeployableResource } from "./deployable";
+import { Resource } from "./resource";
 
 type Newable<T> = new (...args: any[]) => T;
 
 export const createDeployableResourceGraph = async (
   resourceDefinitionGraph: Resource[],
-  deployableResourceMap: { [key: string]: Newable<DeployableResource> },
+  deployableResourceMap: { [key: string]: Newable<DeployableResource<any>> },
 ) => {
-  const outputGraph: DeployableResource[] = [];
+  const outputGraph: DeployableResource<any>[] = [];
 
   for (const node of resourceDefinitionGraph) {
     if (!deployableResourceMap[node.type]) {

@@ -1,18 +1,19 @@
 import { AwsResourceGroup } from "@notation/aws.resources/client";
+import { ApiGateway, ApiGatewayStage } from "@notation/aws.resources/resources";
 import { ApiGatewayHandler, fn } from "./lambda";
 export * from "./api-gateway.utils";
 
 export const api = (config: { name: string }) => {
   const apiGroup = new AwsResourceGroup("api", config);
-  const apiGateway = apiGroup.addResource("api-gateway", { name: config.name });
+  const apiGateway = apiGroup.add(new ApiGateway({ name: config.name }));
 
-  apiGroup.addResource("api-gateway/stage", {
-    name: "dev",
-    deploymentId: "123",
-    dependencies: {
-      routerId: apiGateway.id,
-    },
-  });
+  apiGroup.add(
+    new ApiGatewayStage({
+      name: "prod",
+      router: apiGateway,
+      deployment: apiGateway,
+    }),
+  );
 
   return apiGroup;
 };
@@ -23,7 +24,7 @@ export const route = (
   path: string,
   handler: ApiGatewayHandler,
 ) => {
-  const apiGateway = apiGroup.findResourceByType("api-gateway")!;
+  const apiGateway = apiGroup.findResource("api-gateway")!;
 
   // at compile time becomes infra module
   const fnGroup = handler as any as ReturnType<typeof fn>;
@@ -34,12 +35,12 @@ export const route = (
 
   let integration;
 
-  const lambda = fnGroup.findResourceByType("lambda")!;
-  const permission = fnGroup.findResourceByType("lambda/permission");
-  integration = fnGroup.findResourceByType("api-gateway/integration");
+  const lambda = fnGroup.findResource("lambda")!;
+  const permission = fnGroup.findResource("lambda/permission");
+  integration = fnGroup.findResource("api-gateway/integration");
 
   if (!integration) {
-    integration = fnGroup.addResource("api-gateway/integration", {
+    integration = fnGroup.add("api-gateway/integration", {
       dependencies: {
         apiGatewayId: apiGateway.id,
         lambdaId: lambda.id,
@@ -48,7 +49,7 @@ export const route = (
   }
 
   if (!permission) {
-    fnGroup.addResource("lambda/permission", {
+    fnGroup.add("lambda/permission", {
       dependencies: {
         apiGatewayId: apiGateway.id,
         lambdaId: lambda.id,
@@ -56,7 +57,7 @@ export const route = (
     });
   }
 
-  routeGroup.addResource("api-gateway/route", {
+  routeGroup.add("api-gateway/route", {
     method,
     path,
     dependencies: {

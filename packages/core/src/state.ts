@@ -1,9 +1,10 @@
-import { Resource, ResourceGroup } from "./resource-group";
-import { DeployableResource } from "./resource";
+import { Resource } from "./resource";
+import { ResourceGroup } from "./resource-group";
+import { DeployableResource } from "./deployable";
 
-export let resourceGroups: ResourceGroup<any, any>[] = [];
+export let resourceGroups: ResourceGroup[] = [];
 export let resources: Resource[] = [];
-export let deployableResources: DeployableResource[] = [];
+export let deployableResources: DeployableResource<any>[] = [];
 
 let resourceGroupCounter = 0;
 let resourceCounter = 0;

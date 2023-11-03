@@ -4,24 +4,14 @@ import {
   getResourceCount,
   getResourceGroupCount,
 } from "./state";
-
-export type Resource = {
-  type: string;
-  id: number;
-  groupId: number;
-  dependencies: Record<string, number>;
-};
-
-export type ResourceOptions<T> = T & {
-  dependencies?: Record<string, number>;
-};
+import { Resource } from "./resource";
 
 export type ResourceGroupOptions = {
   dependencies?: Record<string, number>;
   [key: string]: any;
 };
 
-export class ResourceGroup<ResourceConfigMap extends Record<string, any>> {
+export abstract class ResourceGroup {
   type: string;
   id: number;
   dependencies: Record<string, number>;
@@ -39,23 +29,15 @@ export class ResourceGroup<ResourceConfigMap extends Record<string, any>> {
     return this;
   }
 
-  addResource = <T extends keyof ResourceConfigMap>(
-    type: T,
-    opts: ResourceOptions<ResourceConfigMap[T]>,
-  ) => {
-    const resource: Resource = {
-      id: getResourceCount(),
-      groupId: this.id,
-      type: type as string,
-      dependencies: opts.dependencies || {},
-      ...opts,
-    };
+  add(resource: Resource) {
+    resource.id = getResourceCount();
+    resource.groupId = this.id;
     resources.push(resource);
     this.resources.push(resource);
     return resource;
-  };
+  }
 
-  findResourceByType = (type: keyof ResourceConfigMap) => {
+  findResource(type: string) {
     return this.resources.find((r) => r.type === type);
-  };
+  }
 }
