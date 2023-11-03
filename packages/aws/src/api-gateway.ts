@@ -9,7 +9,7 @@ export const api = (config: { name: string }) => {
 
   apiGroup.add(
     new apiGateway.Stage({
-      config: { name: "prod" },
+      config: { stageName: "dev" },
       dependencies: { router: api },
     }),
   );
@@ -41,13 +41,7 @@ export const route = (
   if (!integration) {
     integration = fnGroup.add(
       new apiGateway.LambdaIntegration({
-        config: {
-          name: `lambda-integration/${lambda.config}-${method}-${path}`,
-        },
-        dependencies: {
-          api,
-          lambda,
-        },
+        dependencies: { api, lambda },
       }),
     );
   }

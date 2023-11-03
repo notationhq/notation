@@ -1,11 +1,19 @@
 import { Resource } from "@notation/core";
-import { PutIntegrationCommandInput as IntegrationInput } from "@aws-sdk/client-api-gateway";
+import {
+  PutIntegrationCommand,
+  PutIntegrationCommandInput,
+  PutIntegrationCommandOutput,
+} from "@aws-sdk/client-api-gateway";
 import { Api } from "./api";
-import { Integration } from ".";
+import { apiGatewayClient } from "src/utils/aws-clients";
 
-export type LambdaIntegrationConfig = {
-  name: string;
-};
+export type LambdaIntegrationInput = PutIntegrationCommandInput;
+export type LambdaIntegrationOutput = PutIntegrationCommandOutput;
+
+export type LambdaIntegrationConfig = Omit<
+  LambdaIntegrationInput,
+  "restApiId" | "resourceId" | "type" | "uri" | "httpMethod"
+>;
 
 export type LambdaIntegrationDependencies = {
   api: Api;
@@ -13,43 +21,31 @@ export type LambdaIntegrationDependencies = {
 };
 
 export class LambdaIntegration extends Resource<
-  {},
-  {},
+  LambdaIntegrationInput,
+  LambdaIntegrationOutput,
   LambdaIntegrationConfig,
   LambdaIntegrationDependencies
 > {
   type = "api-gateway/integration/lambda";
   region = "eu-west-1";
-  integration: Integration;
 
-  constructor(opts: {
-    config: LambdaIntegrationConfig;
-    dependencies: LambdaIntegrationDependencies;
-  }) {
-    super(opts);
-    this.integration = new Integration({
-      config: {
-        name: opts.config.name,
-        type: "AWS_PROXY",
-        uri: LambdaIntegration.getLambdaInvocationUri(
-          this.region,
-          this.dependencies.lambda.output.arn,
-        ),
-        httpMethod: "POST",
-      },
-      dependencies: {
-        api: opts.dependencies.api,
-        resource: opts.dependencies.lambda,
-      },
-    });
+  getDeployInput(): LambdaIntegrationInput {
+    return {
+      restApiId: this.dependencies.api.output.id,
+      resourceId: this.dependencies.lambda.output.id,
+      type: "AWS_PROXY",
+      uri: LambdaIntegration.getLambdaInvocationUri(
+        this.region,
+        this.dependencies.lambda.output.arn,
+      ),
+      httpMethod: "POST",
+      ...this.config,
+    };
   }
 
-  getDeployProps() {
-    return this.integration.getDeployProps();
-  }
-
-  deploy(props: IntegrationInput) {
-    return this.integration.deploy(props);
+  async deploy(input: LambdaIntegrationInput) {
+    const command = new PutIntegrationCommand(input);
+    return apiGatewayClient.send(command);
   }
 
   static getLambdaInvocationUri(region: string, arn: string) {

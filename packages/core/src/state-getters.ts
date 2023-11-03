@@ -1,5 +1,4 @@
-import { resourceGroups, resources, deployableResources } from "./state";
+import { resourceGroups, resources } from "./state";
 
 export const getResourceGroups = () => resourceGroups;
 export const getResources = () => resources;
-export const getDeployableResources = () => deployableResources;
