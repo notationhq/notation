@@ -1,20 +1,26 @@
-export abstract class Resource<Config = any, Output = any> {
+export abstract class Resource<
+  Input = {},
+  Output = {},
+  Config = {},
+  Dependencies extends Record<string, Resource> = {},
+> {
   config: Config;
-  dependencies: Record<string, Resource> = {};
+  dependencies: Dependencies;
   type: string = "";
   id: number = -1;
   groupId: number = -1;
+  output: Output = null as Output;
 
-  constructor(config: Config) {
-    this.config = config;
+  constructor(opts: { config: Config; dependencies?: Dependencies }) {
+    this.config = opts.config;
+    this.dependencies = opts.dependencies || ({} as Dependencies);
     return this;
   }
 
-  abstract getDeployProps(): any;
-
-  get output(): Output {
-    throw new Error(
-      "Cannot call output on a resource until it has been deployed",
-    );
+  async runDeploy() {
+    this.output = await this.deploy(this.getDeployProps());
   }
+
+  abstract getDeployProps(): Input;
+  abstract deploy(input: Input): Promise<Output>;
 }

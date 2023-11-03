@@ -1,17 +1,16 @@
-import { AwsResourceGroup } from "@notation/aws.resources/client";
-import { ApiGateway, ApiGatewayStage } from "@notation/aws.resources/resources";
+import { AwsResourceGroup } from "@notation/aws.lib/client";
+import { apiGateway } from "@notation/aws.lib/resources";
 import { ApiGatewayHandler, fn } from "./lambda";
 export * from "./api-gateway.utils";
 
 export const api = (config: { name: string }) => {
   const apiGroup = new AwsResourceGroup("api", config);
-  const apiGateway = apiGroup.add(new ApiGateway({ name: config.name }));
+  const api = apiGroup.add(new apiGateway.Api({ config }));
 
   apiGroup.add(
-    new ApiGatewayStage({
-      name: "prod",
-      router: apiGateway,
-      deployment: apiGateway,
+    new apiGateway.Stage({
+      config: { name: "prod" },
+      dependencies: { router: api },
     }),
   );
 
@@ -24,7 +23,7 @@ export const route = (
   path: string,
   handler: ApiGatewayHandler,
 ) => {
-  const apiGateway = apiGroup.findResource("api-gateway")!;
+  const api = apiGroup.findResource("api-gateway") as apiGateway.Api;
 
   // at compile time becomes infra module
   const fnGroup = handler as any as ReturnType<typeof fn>;
@@ -40,18 +39,23 @@ export const route = (
   integration = fnGroup.findResource("api-gateway/integration");
 
   if (!integration) {
-    integration = fnGroup.add("api-gateway/integration", {
-      dependencies: {
-        apiGatewayId: apiGateway.id,
-        lambdaId: lambda.id,
-      },
-    });
+    integration = fnGroup.add(
+      new apiGateway.LambdaIntegration({
+        config: {
+          name: `lambda-integration/${lambda.config}-${method}-${path}`,
+        },
+        dependencies: {
+          api,
+          lambda,
+        },
+      }),
+    );
   }
 
   if (!permission) {
     fnGroup.add("lambda/permission", {
       dependencies: {
-        apiGatewayId: apiGateway.id,
+        apiGatewayId: api.id,
         lambdaId: lambda.id,
       },
     });
@@ -61,7 +65,7 @@ export const route = (
     method,
     path,
     dependencies: {
-      apiGatewayId: apiGateway.id,
+      apiGatewayId: api.id,
       integrationId: integration.id,
     },
   });

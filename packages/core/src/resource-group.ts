@@ -29,7 +29,7 @@ export abstract class ResourceGroup {
     return this;
   }
 
-  add(resource: Resource) {
+  add<T extends Resource>(resource: T) {
     resource.id = getResourceCount();
     resource.groupId = this.id;
     resources.push(resource);

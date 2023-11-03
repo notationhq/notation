@@ -30,15 +30,15 @@ importers:
 
   packages/aws:
     specifiers:
-      '@notation/aws.resources': workspace:*
+      '@notation/aws.lib': workspace:*
       '@notation/core': workspace:*
       '@types/aws-lambda': ^8.10.125
     dependencies:
-      '@notation/aws.resources': link:../aws.resources
+      '@notation/aws.lib': link:../aws.lib
       '@notation/core': link:../core
       '@types/aws-lambda': 8.10.125
 
-  packages/aws.resources:
+  packages/aws.lib:
     specifiers:
       '@aws-sdk/client-api-gateway': ^3.441.0
       '@notation/core': workspace:*
