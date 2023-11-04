@@ -18,7 +18,7 @@ export abstract class Resource<
   }
 
   async runDeploy() {
-    this.output = await this.deploy(this.getDeployInput());
+    this.output = await this.deploy(this.getDeployInput() as any as Input);
   }
 
   abstract getDeployInput(): Input;
