@@ -1,4 +1,4 @@
-import { Resource } from "@notation/core";
+import { createResourceFactory } from "@notation/core";
 import {
   CreateStageCommand,
   CreateStageCommandInput,
@@ -7,27 +7,26 @@ import {
 import { apiGatewayClient } from "src/utils/aws-clients";
 import { Api } from "./api";
 
-export type StageConfig = Omit<StageInput, "restApiId" | "deploymentId">;
 export type StageInput = CreateStageCommandInput;
 export type StageOutput = CreateStageCommandOutput;
-export type StageDependencies = { router: Api };
+export type StageDependencies = { router: InstanceType<typeof Api> };
 
-export class Stage extends Resource<
+const createStageClass = createResourceFactory<
   StageInput,
   StageOutput,
-  StageConfig,
   StageDependencies
-> {
-  type = "api-gateway/stage";
+>();
 
-  getDeployInput = (): StageInput => ({
-    restApiId: this.dependencies.router.output.id,
+export const Stage = createStageClass({
+  type: "api-gateway/stage",
+
+  getDefaultConfig: (dependencies) => ({
+    restApiId: dependencies.router.output.id,
     deploymentId: "todo",
-    ...this.config,
-  });
+  }),
 
   async deploy(props: StageInput) {
     const command = new CreateStageCommand(props);
     return apiGatewayClient.send(command);
-  }
-}
+  },
+});

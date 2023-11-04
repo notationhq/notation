@@ -23,7 +23,9 @@ export const route = (
   path: string,
   handler: ApiGatewayHandler,
 ) => {
-  const api = apiGroup.findResource("api-gateway") as apiGateway.Api;
+  const api = apiGroup.findResource("api-gateway") as InstanceType<
+    typeof apiGateway.Api
+  >;
 
   // at compile time becomes infra module
   const fnGroup = handler as any as ReturnType<typeof fn>;

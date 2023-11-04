@@ -1,3 +1,5 @@
+import { RecordOptionalIfNotRequired } from "./types";
+
 export abstract class Resource<
   Input = {},
   Output = {},
@@ -11,26 +13,56 @@ export abstract class Resource<
   groupId: number = -1;
   output: Output = null as Output;
 
-  constructor(opts: { config?: Config; dependencies?: Dependencies }) {
+  constructor(
+    opts: RecordOptionalIfNotRequired<"config", Config> &
+      RecordOptionalIfNotRequired<"dependencies", Dependencies>,
+  ) {
     this.config = opts.config || ({} as Config);
     this.dependencies = opts.dependencies || ({} as Dependencies);
     return this;
-  }
-
-  async runDeploy() {
-    this.output = await this.deploy(this.getDeployInput() as any as Input);
   }
 
   abstract getDeployInput(): Input;
   abstract deploy(input: Input): Promise<Output>;
 }
 
-export abstract class ApexResource<Input = {}, Output = {}> extends Resource<
-  Input,
-  Output
-> {
-  getDeployInput(): Input {
-    return this.config;
-  }
-  abstract deploy(input: Input): Promise<Output>;
+export function createApexResourceFactory<Input = {}, Output = {}>() {
+  return (opts: {
+    type: string;
+    deploy: (input: Input) => Promise<Output>;
+  }) => {
+    return class extends Resource<Input, Output> {
+      type = opts.type;
+      getDeployInput(): Input {
+        return this.config;
+      }
+      deploy = opts.deploy;
+    };
+  };
+}
+
+export function createResourceFactory<
+  Input = {},
+  Output = {},
+  Dependencies extends Record<string, Resource> = {},
+>() {
+  return <
+    DefaultConfig extends Partial<Input> = {},
+    Config = Omit<Input, keyof DefaultConfig>,
+  >(opts: {
+    type: string;
+    getDefaultConfig: (dependencies: Dependencies) => DefaultConfig;
+    deploy: (input: Input) => Promise<Output>;
+  }) => {
+    return class extends Resource<Input, Output, Config, Dependencies> {
+      type = opts.type;
+      getDeployInput(): Input {
+        return {
+          ...this.config,
+          ...opts.getDefaultConfig(this.dependencies),
+        } as Input;
+      }
+      deploy = opts.deploy;
+    };
+  };
 }

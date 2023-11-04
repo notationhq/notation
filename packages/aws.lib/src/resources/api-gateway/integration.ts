@@ -1,4 +1,4 @@
-import { Resource } from "@notation/core";
+import { createResourceFactory, Resource } from "@notation/core";
 import {
   PutIntegrationCommand,
   PutIntegrationCommandInput,
@@ -9,33 +9,29 @@ import { apiGatewayClient } from "src/utils/aws-clients";
 
 export type IntegrationInput = PutIntegrationCommandInput;
 export type IntegrationOutput = PutIntegrationCommandOutput;
-export type IntegrationConfig = Omit<
-  IntegrationInput,
-  "restApiId" | "resourceId"
->;
 export type IntegrationDependencies = {
-  api: Api;
-  resource: Resource<{}, { id: string; arn: string }>;
+  api: InstanceType<typeof Api>;
+  resource: Resource<{}, { id: string }>;
 };
 
-export class Integration extends Resource<
+const createIntegrationClass = createResourceFactory<
   IntegrationInput,
   IntegrationOutput,
-  IntegrationConfig,
   IntegrationDependencies
-> {
-  type = "api-gateway/integration";
+>();
 
-  getDeployInput(): IntegrationInput {
+export const Integration = createIntegrationClass({
+  type: "api-gateway/integration",
+
+  getDefaultConfig(dependencies) {
     return {
-      restApiId: this.dependencies.api.output.id,
-      resourceId: this.dependencies.resource.output.id,
-      ...this.config,
+      restApiId: dependencies.api.output.id,
+      resourceId: dependencies.resource.output.id,
     };
-  }
+  },
 
-  deploy(props: IntegrationInput) {
+  deploy(props) {
     const command = new PutIntegrationCommand(props);
     return apiGatewayClient.send(command);
-  }
-}
+  },
+});
