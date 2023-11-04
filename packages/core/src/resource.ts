@@ -47,11 +47,14 @@ export function createResourceFactory<
   Dependencies extends Record<string, Resource> = {},
 >() {
   return <
-    DefaultConfig extends Partial<Input> = {},
+    DefaultConfig extends Partial<Input> = Partial<Input>,
     Config = Omit<Input, keyof DefaultConfig>,
   >(opts: {
     type: string;
-    getDefaultConfig: (dependencies: Dependencies) => DefaultConfig;
+    getDefaultConfig: (
+      dependencies: Dependencies,
+      config: Config,
+    ) => DefaultConfig;
     deploy: (input: Input) => Promise<Output>;
   }) => {
     return class extends Resource<Input, Output, Config, Dependencies> {
@@ -59,7 +62,7 @@ export function createResourceFactory<
       getDeployInput(): Input {
         return {
           ...this.config,
-          ...opts.getDefaultConfig(this.dependencies),
+          ...opts.getDefaultConfig(this.dependencies, this.config),
         } as Input;
       }
       deploy = opts.deploy;
